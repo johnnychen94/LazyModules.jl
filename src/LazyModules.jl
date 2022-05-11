@@ -43,9 +43,9 @@ function Base.getproperty(m::LazyModule, s::Symbol)
         setfield!(m, :_lazy_loaded, true)
     end
     lm = Base.root_module(getfield(m, :_lazy_pkgid))
-    # TODO(johnnychen94): use `s` to construct the function name
-    f(args...; kw...) = invokelatest(getfield(lm,s), args...; kw...)
-    return f
+    obj = getfield(lm, s)
+    @eval $s(args...; kw...) = invokelatest($obj, args...; kw...)
+    return @eval $s
 end
 
 """
