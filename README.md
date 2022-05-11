@@ -7,7 +7,13 @@ If some dependency is not used, then users don't need to pay for its latency.
 
 Only for package authors, end-users should not use this package directly.
 
-# The lazy Plots story
+## Syntax
+
+- `@lazy import Foo` ✅
+- `@lazy import Foo as LazyFoo` ✅
+- `@lazy using Foo` ❌
+
+## The lazy Plots story
 
 Assume that you've built a fantastic package `examples/MyPkg` with some built-in plot functions:
 
@@ -114,14 +120,6 @@ julia> SparseArrays.sprand(10, 10, 0.3) # triggers the loading
 Package is loaded whenever there's a `getproperty` call, e.g., `SparseArrays.sprand` as shown above.
 
 ## FAQ
-
-**What's the syntax?**
-
-There is only one way to use it so far
-
-- `@lazy import Foo` ✅
-- `@lazy import Foo as LazyFoo` ❌ (Not yet)
-- `@lazy using Foo` ❌
 
 **What can I use?**
 
