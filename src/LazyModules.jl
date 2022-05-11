@@ -67,13 +67,13 @@ macro lazy(ex)
     if x.head == :.
         pkgname = String(x.args[1])
         m = LazyModule(pkgname)
-        Core.eval(__module__, :($(x.args[1]) = $m))
+        Core.eval(__module__, :(const $(x.args[1]) = $m))
     elseif x.head == :as
         as_name = x.args[2]
         m_ex = x.args[1]
         pkgname = String(m_ex.args[1])
         m = LazyModule(pkgname)
-        Core.eval(__module__, :($as_name = $m))
+        Core.eval(__module__, :(const $as_name = $m))
     else
         @warn "unrecognized import syntax $ex"
     end
