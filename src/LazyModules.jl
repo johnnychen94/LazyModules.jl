@@ -1,8 +1,9 @@
 module LazyModules
 
-export lazy_import, @lazy
-
+using Base: invokelatest
 using Base: PkgId
+
+export @lazy, invokelatest
 
 const load_locker = Threads.ReentrantLock()
 
@@ -23,6 +24,15 @@ mutable struct LazyModule
     _lazy_loaded::Bool
 end
 LazyModule(id::PkgId) = LazyModule(id, false)
+function LazyModule(name::String)
+    pkgid = Base.identify_package(name)
+    isnothing(pkgid) && error("can't find package: $name")
+    return LazyModule(pkgid)
+end
+
+function Base.show(io::IO, m::LazyModule)
+    print(io, "LazyModule(", m._lazy_pkgid.name, ")")
+end
 
 function Base.getproperty(m::LazyModule, s::Symbol)
     if s in (:_lazy_pkgid, :_lazy_loaded)
@@ -39,17 +49,7 @@ end
 """
     @lazy import PkgName
 
-Lazily import package `PkgName`.
-
-The package loading of `PkgName` will be delayed to when it's actually required.
-For instance, if one does `@lazy import ImageCore`, then any symbol usage such
-as `ImageCore.RGB` will trigger the package loading.
-
-!!!info "dispatch overhead"
-    This strategy uses `invokelatest` to work around the world age issues, it
-    has about 100ns overhead for each call. Thus it should only be used for
-    non-trivial function call.
-
+Lazily import package `PkgName` with the actual loading delayed to the first usage.
 """
 macro lazy(ex)
     if ex.head != :import
@@ -66,13 +66,12 @@ macro lazy(ex)
         return ex
     end
     pkgname = String(x.args[1])
-    m = lazy_import(pkgname)
+    m = LazyModule(pkgname)
     Core.eval(__module__, :($(x.args[1]) = $m))
 end
 
-function lazy_import(pkgname::String)
-    pkgid = Base.identify_package(pkgname)
-    return LazyModule(pkgid)
-end
 
+if VERSION < v"1.1"
+    isnothing(x) = x === nothing
+end
 end # module
