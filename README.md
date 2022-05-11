@@ -61,8 +61,7 @@ export generate_data, draw_figure
 +@lazy import Plots
 
 generate_data(n) = sin.(range(start=0, stop=5, length=n) .+ 0.1.*rand(n))
--draw_figure(data) = Plots.plot(data, title="MyPkg Plot")
-+draw_figure(data) = invokelatest(Plots.plot, data, title="MyPkg Plot")
+draw_figure(data) = Plots.plot(data, title="MyPkg Plot")
 
 end
 ```
@@ -98,7 +97,7 @@ this LazyModules package won't be helpful at all.
 
 ## What is a LazyModule
 
-`LazyModule` is not a `Module`; it is indeed, a struct.
+`LazyModule` is not a `Module`; it is indeed, a struct that overrides `getproperty`.
 
 ```julia
 julia> using LazyModules
@@ -123,13 +122,9 @@ There is only one way to use it so far
 - `@lazy import Foo as LazyFoo` ❌ (Not yet)
 - `@lazy using Foo` ❌
 
-**Why invokelatest?**
+**What can I use?**
 
-TL;DR; this is required to solve the world age issue.
-
-Because the package is loaded lazily, the caller function that triggers package loading is still at
-an old world age. The `invokelatest` function is used to force the caller to use methods in the
-*latest* world age.
+For functions and constructors, only.
 
 **How large is the overhead?**
 

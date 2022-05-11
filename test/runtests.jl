@@ -1,23 +1,24 @@
 using LazyModules
 using Test
 
-module LazySparseArrays
+module LazyOffsetArrays
     using LazyModules
 
-    @lazy import SparseArrays
+    @lazy import OffsetArrays
 
-    function lsprand(args...)
-        return invokelatest(SparseArrays.sprand, args...)
+    function zero_based(A)
+        return OffsetArrays.OffsetArray(A, OffsetArrays.Origin(0))
     end
-    export lsprand
+    export zero_based
 end
 
 @testset "LazyModules" begin
-    using .LazySparseArrays
+    using .LazyOffsetArrays
 
-    A = lsprand(10, 10, 0.5)
-    @test size(A) == (10, 10)
+    A = rand(10, 10)
+    AO = zero_based(A)
+    @test axes(AO) == (0:9, 0:9)
 
-    using SparseArrays
-    @test A isa SparseMatrixCSC
+    using OffsetArrays
+    @test AO isa OffsetArray
 end
