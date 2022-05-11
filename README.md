@@ -10,7 +10,7 @@ Only for package authors, end-users should not use this package directly.
 ## Syntax
 
 - `@lazy import Foo` ✅
-- `@lazy import Foo as LazyFoo` ✅
+- `@lazy import Foo as LazyFoo` ✅ (Julia 1.6+)
 - `@lazy using Foo` ❌
 
 ## The lazy Plots story

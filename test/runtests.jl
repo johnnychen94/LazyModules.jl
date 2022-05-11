@@ -22,7 +22,9 @@ end
     using OffsetArrays
     @test AO isa OffsetArray
 
-    @lazy import OffsetArrays as FOO
-    AOO = FOO.OffsetArray(A, -1, -1)
-    @test AOO == AO
+    @static if VERSION >= v"1.6"
+        @lazy import OffsetArrays as FOO
+        AOO = FOO.OffsetArray(A, -1, -1)
+        @test AOO == AO
+    end
 end
