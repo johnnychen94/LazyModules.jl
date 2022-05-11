@@ -125,6 +125,17 @@ Package is loaded whenever there's a `getproperty` call, e.g., `SparseArrays.spr
 
 For functions and constructors, only.
 
+A wrapper function will be created so you should not use it for dispatch purposes. Parametric types
+are not supported.
+
+```julia
+@lazy import ImageCore as LIC
+typeof(LIC.RGB) # typeof(LazyModules.RGB) (singleton type of function RGB, subtype of Function)
+
+import ImageCore
+typeof(ImageCore.RGB) # UnionAll
+```
+
 **How large is the overhead?**
 
 The overhead is about ~100ns in Intel i9-12900K due to the dynamic dispatch via `invokelatest`. Thus
