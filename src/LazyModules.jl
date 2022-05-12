@@ -13,6 +13,7 @@ mutable struct LazyModule
     _lazy_loaded::Bool
 end
 LazyModule(id::PkgId) = LazyModule(id, false)
+LazyModule(name::Symbol) = LazyModule(string(name))
 function LazyModule(name::String)
     pkgid = Base.identify_package(name)
     isnothing(pkgid) && error("can't find package: $name")
@@ -73,32 +74,42 @@ macro lazy(ex)
     end
     x = args[1]
     if x.head == :.
-        if isdefined(__module__, x.args[1])
-            # otherwise, Revise will constantly trigger the constant redefinition warning
-            return ex
-        end
-        pkgname = String(x.args[1])
-        m = LazyModule(pkgname)
-        Core.eval(__module__, :(const $(x.args[1]) = $m))
-        do_aggressive_load() && schedule(@task(checked_import(m)))
+        # usage: @lazy import Foo
+        m = _lazy_load(__module__, x.args[1], x.args[1])
+        # TODO(johnnychen94): the background eager loading seems to work only for Main scope
+        _aggressive_load(m)
         return m
-    elseif x.head == :as
-        as_name = x.args[2]
-        m_ex = x.args[1]
-        if isdefined(__module__, m_ex.args[1])
-            # otherwise, Revise will constantly trigger the constant redefinition warning
-            return ex
-        end
-        pkgname = String(m_ex.args[1])
-        m = LazyModule(pkgname)
-        Core.eval(__module__, :(const $as_name = $m))
-        do_aggressive_load() && schedule(@task(checked_import(m)))
+    elseif x.head == :as # compat: Julia at least v1.6
+        # usage: @lazy import Foo as LazyFoo
+        m = _lazy_load(__module__, x.args[2], x.args[1].args[1])
+        _aggressive_load(m)
         return m
     else
-        @warn "unrecognized import syntax $ex"
+        @warn "unrecognized syntax $ex"
     end
 end
 
+function _lazy_load(mod, name::Symbol, sym::Symbol)
+    if isdefined(mod, name)
+        # otherwise, Revise will constantly trigger the constant redefinition warning
+        m = getfield(mod, name)
+        if m isa LazyModule
+            return m
+        else
+            @warn "Failed to import module, the name $name already exists"
+            return nothing
+        end
+    end
+    m = LazyModule(sym)
+    Core.eval(mod, :(const $(name) = $m))
+    return m
+end
+
+function _aggressive_load(m::LazyModule)
+    do_aggressive_load() || return m
+    @async checked_import(m)
+    return m
+end
 
 if VERSION < v"1.1"
     isnothing(x) = x === nothing
