@@ -6,8 +6,7 @@ This package provides package developers an alternative option to delay package 
 If some dependency is not used, then users don't need to pay for its latency.
 
 This package is not panacea, it only works for a very limited set of use cases. This package is only
-for (maybe experienced) package authors. End-users without a brave heart is not recommended to use
-this package directly.
+for (maybe experienced) package authors. End-users is not recommended to use this package directly.
 
 ## Syntax
 
@@ -144,8 +143,6 @@ Package is loaded whenever there's a `getproperty` call, e.g., `SparseArrays.spr
 The simplest example to trigger the world age issue is perhaps the following:
 
 ```julia
-julia> ENV["AGGRESSIVE_LOAD"] = "0" # disable the package loading in the background
-
 julia> using LazyModules
 
 julia> @lazy import ImageCore
