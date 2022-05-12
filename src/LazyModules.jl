@@ -6,7 +6,10 @@ using Base: PkgId
 export @lazy
 
 const _LOAD_LOCKER = Threads.ReentrantLock()
-do_aggressive_load() = get(ENV, "AGGRESSIVE_LOAD", "true") != "false"
+function do_aggressive_load()
+    v = lowercase(get(ENV, "AGGRESSIVE_LOAD", "true"))
+    return !(v == "false" || v == "0")
+end
 
 mutable struct LazyModule
     _lazy_pkgid::PkgId
