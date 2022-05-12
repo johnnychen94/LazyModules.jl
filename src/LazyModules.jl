@@ -65,12 +65,20 @@ macro lazy(ex)
     end
     x = args[1]
     if x.head == :.
+        if isdefined(__module__, x.args[1])
+            # otherwise, Revise will constantly trigger the constant redefinition warning
+            return ex
+        end
         pkgname = String(x.args[1])
         m = LazyModule(pkgname)
         Core.eval(__module__, :(const $(x.args[1]) = $m))
     elseif x.head == :as
         as_name = x.args[2]
         m_ex = x.args[1]
+        if isdefined(__module__, m_ex.args[1])
+            # otherwise, Revise will constantly trigger the constant redefinition warning
+            return ex
+        end
         pkgname = String(m_ex.args[1])
         m = LazyModule(pkgname)
         Core.eval(__module__, :(const $as_name = $m))
