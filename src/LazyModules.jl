@@ -20,6 +20,8 @@ function LazyModule(name::String)
     return LazyModule(pkgid)
 end
 
+Base.Docs.Binding(m::LazyModule, v::Symbol) = Base.Docs.Binding(checked_import(m._lazy_pkgid), v)
+
 function Base.show(io::IO, m::LazyModule)
     print(io, "LazyModule(", m._lazy_pkgid.name, ")")
 end
@@ -30,12 +32,10 @@ function Base.getproperty(m::LazyModule, s::Symbol)
     end
     checked_import(m)
     lm = Base.root_module(getfield(m, :_lazy_pkgid))
-    # TODO: create meaningful function name using `s`
-    f(args...; kw...) = invokelatest(getfield(lm, s), args...; kw...)
-    return f
+    return getfield(lm, s)
 end
 
-function checked_import(pkgid)
+function checked_import(pkgid::Base.PkgId)
     mod = if Base.root_module_exists(pkgid)
             Base.root_module(pkgid)
         else
