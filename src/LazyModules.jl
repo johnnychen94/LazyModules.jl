@@ -6,10 +6,6 @@ using Base: PkgId
 export @lazy
 
 const _LOAD_LOCKER = Threads.ReentrantLock()
-function do_aggressive_load()
-    v = lowercase(get(ENV, "AGGRESSIVE_LOAD", "true"))
-    return !(v == "false" || v == "0")
-end
 
 mutable struct LazyModule
     _lazy_pkgid::PkgId
@@ -99,7 +95,6 @@ macro lazy(ex)
         # TODO(johnnychen94): the background eager loading seems to work only for Main scope
         isa(m, Module) && return m
         isnothing(m) && return ex
-        _aggressive_load(m)
         return m
     elseif x.head == :(:)
         # usage: @lazy import Foo: foo, bar
@@ -110,7 +105,6 @@ macro lazy(ex)
         m = _lazy_load(__module__, x.args[2], x.args[1].args[1])
         isa(m, Module) && return m
         isnothing(m) && return ex
-        _aggressive_load(m)
         return m
     else
         @warn "unrecognized syntax $ex"
@@ -131,12 +125,6 @@ function _lazy_load(mod, name::Symbol, sym::Symbol)
     end
     m = LazyModule(sym)
     Core.eval(mod, :(const $(name) = $m))
-    return m
-end
-
-function _aggressive_load(m::LazyModule)
-    do_aggressive_load() || return m
-    @async checked_import(m)
     return m
 end
 
