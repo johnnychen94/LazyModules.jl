@@ -5,7 +5,8 @@
 This package provides package developers an alternative option to delay package loading until used.
 If some dependency is not used, then users don't need to pay for its latency.
 
-Only for package authors, end-users should not use this package directly.
+This package is not panacea, it only works for a very limited set of use cases. This package is only
+for (maybe experienced) package authors. End-users should not use this package directly.
 
 ## Syntax
 
@@ -176,7 +177,7 @@ julia> foo()
 RGB{Float64}(0.0,0.0,0.0)
 ```
 
-Load the "core" packages eagerly so that we don't need to process "alien" types. For instance,
+The second is to load the "core" packages eagerly so that we don't need to process "alien" types. For instance,
 `RGB` and its arithmetic are provided by `Colors` and `ColorVectorSpace`:
 
 ```julia
