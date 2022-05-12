@@ -22,12 +22,24 @@ function LazyModule(name::String)
     isnothing(pkgid) && error("can't find package: $name")
     return LazyModule(pkgid)
 end
-
 Base.Docs.Binding(m::LazyModule, v::Symbol) = Base.Docs.Binding(checked_import(m._lazy_pkgid), v)
-
 function Base.show(io::IO, m::LazyModule)
     print(io, "LazyModule(", m._lazy_pkgid.name, ")")
 end
+
+struct LazyFunction
+    pkgid::PkgId
+    s::Symbol
+end
+
+function (f::LazyFunction)(args...; kwargs...)
+    m = checked_import(f.pkgid)
+    return invokelatest(getfield(m, f.s), args...; kwargs...)
+end
+function Base.show(io::IO, f::LazyFunction)
+    print(io, "LazyFunction(", f.pkgid.name, ".", f.s, ")")
+end
+Base.Docs.aliasof(f::LazyFunction,   b) = Base.Docs.Binding(checked_import(f.pkgid), f.s)
 
 function Base.getproperty(m::LazyModule, s::Symbol)
     if s in (:_lazy_pkgid, :_lazy_loaded)
@@ -37,16 +49,13 @@ function Base.getproperty(m::LazyModule, s::Symbol)
     lm = Base.root_module(getfield(m, :_lazy_pkgid))
     obj = getfield(lm, s)
     if obj isa Function
-        @debug "define wrapper function: $s"
-        # TODO(johnnychen94): generate function name using s
-        return f(args...; kwargs...) = Base.invokelatest(obj, args...; kwargs...)
+        return LazyFunction(getfield(m, :_lazy_pkgid), s)
     else
-        @debug "get module object: $s"
         return obj
     end
 end
 
-function checked_import(pkgid::Base.PkgId)
+function checked_import(pkgid::PkgId)
     mod = if Base.root_module_exists(pkgid)
         Base.root_module(pkgid)
     else
