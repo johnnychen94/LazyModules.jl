@@ -119,6 +119,86 @@ julia> SparseArrays.sprand(10, 10, 0.3) # triggers the loading
 
 Package is loaded whenever there's a `getproperty` call, e.g., `SparseArrays.sprand` as shown above.
 
+## World-age issue
+
+The simplest example to trigger the world age issue is perhaps the following:
+
+```julia
+julia> using LazyModules
+
+julia> @lazy import ImageCore
+LazyModule(ImageCore)
+
+julia> function foo()
+           c = ImageCore.RGB(0.0, 0.0, 0.0)
+           return c .* 3
+       end
+foo (generic function with 1 method)
+
+julia> foo()
+ERROR: MethodError: no method matching length(::ColorTypes.RGB{Float64})
+The applicable method may be too new: running in world age 31343, while current world is 31370.
+...
+
+julia> foo()
+RGB{Float64}(0.0,0.0,0.0)
+```
+
+Here we can see that:
+
+- at first `foo()` call, it triggers the world-age issue
+- at the second call, it is working okay
+
+This happens because when you first call `foo()`, the `length` method required by `*` is not yet
+available (to the current world age). When the `ImageCore.RGB` triggers the package loading of
+`ImageCore`, which again triggers the recompilation of many methods (in a new world age). But still,
+`*` from the old world age can't see the `length` method in the new world age. Things changed at the
+second call, where `foo()` gets recompiled in the new world age.
+
+There are commonly two ways to work around the world-age issue:
+
+The first workaround is to use `invokelatest` whenever world-age issue occurs.
+But this has some overhead due to the dynamic dispatch.
+
+```julia
+julia> using LazyModules
+
+julia> @lazy import ImageCore
+LazyModule(ImageCore)
+
+julia> function foo()
+           c = ImageCore.RGB(0.0, 0.0, 0.0)
+           return Base.invokelatest(*, c, 3)
+       end
+foo (generic function with 1 method)
+
+julia> foo()
+RGB{Float64}(0.0,0.0,0.0)
+```
+
+Load the "core" packages eagerly so that we don't need to process "alien" types. For instance,
+`RGB` and its arithmetic are provided by `Colors` and `ColorVectorSpace`:
+
+```julia
+julia> using Colors, ColorVectorSpace
+
+julia> using LazyModules
+
+julia> @lazy import ImageCore
+LazyModule(ImageCore)
+
+julia> function foo()
+           c = ImageCore.RGB(0.0, 0.0, 0.0)
+           return c * 3
+       end
+foo (generic function with 1 method)
+
+julia> foo()
+RGB{Float64}(0.0,0.0,0.0)
+```
+
+The world-age issue is exactly the reason why this package should not be used by users directly.
+
 ## FAQ
 
 **What can I use?**
@@ -134,6 +214,17 @@ typeof(LIC.RGB) # typeof(LazyModules.RGB) (singleton type of function RGB, subty
 
 import ImageCore
 typeof(ImageCore.RGB) # UnionAll
+```
+
+This difference would cause some seemingly strange error, if used without caution:
+
+```julia
+julia> rand(ImageCore.RGB)
+RGB{Float64}(0.006670251070669986,0.10659171495118891,0.20788921280581485)
+
+julia> rand(LIC.RGB) # because LIC.RGB is not a type, it's a function
+ERROR: ArgumentError: Sampler for this object is not defined
+...
 ```
 
 **How large is the overhead?**
