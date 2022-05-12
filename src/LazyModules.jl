@@ -77,11 +77,15 @@ macro lazy(ex)
         # usage: @lazy import Foo
         m = _lazy_load(__module__, x.args[1], x.args[1])
         # TODO(johnnychen94): the background eager loading seems to work only for Main scope
+        isa(m, Module) && return m
+        isnothing(m) && return ex
         _aggressive_load(m)
         return m
     elseif x.head == :as # compat: Julia at least v1.6
         # usage: @lazy import Foo as LazyFoo
         m = _lazy_load(__module__, x.args[2], x.args[1].args[1])
+        isa(m, Module) && return m
+        isnothing(m) && return ex
         _aggressive_load(m)
         return m
     else
@@ -93,7 +97,7 @@ function _lazy_load(mod, name::Symbol, sym::Symbol)
     if isdefined(mod, name)
         # otherwise, Revise will constantly trigger the constant redefinition warning
         m = getfield(mod, name)
-        if m isa LazyModule
+        if m isa LazyModule || m isa Module
             return m
         else
             @warn "Failed to import module, the name $name already exists"
