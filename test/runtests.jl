@@ -7,7 +7,8 @@ module LazyOffsetArrays
     @lazy import OffsetArrays
 
     function zero_based(A)
-        return OffsetArrays.OffsetArray(A, OffsetArrays.Origin(0))
+        o = Base.invokelatest(OffsetArrays.Origin, 0)
+        return Base.invokelatest(OffsetArrays.OffsetArray, A, o)
     end
     export zero_based
 end

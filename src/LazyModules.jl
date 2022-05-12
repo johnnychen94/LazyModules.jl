@@ -35,18 +35,26 @@ function Base.getproperty(m::LazyModule, s::Symbol)
     end
     checked_import(m)
     lm = Base.root_module(getfield(m, :_lazy_pkgid))
-    return getfield(lm, s)
+    obj = getfield(lm, s)
+    if obj isa Function
+        @debug "define wrapper function: $s"
+        # TODO(johnnychen94): generate function name using s
+        return f(args...; kwargs...) = Base.invokelatest(obj, args...; kwargs...)
+    else
+        @debug "get module object: $s"
+        return obj
+    end
 end
 
 function checked_import(pkgid::Base.PkgId)
     mod = if Base.root_module_exists(pkgid)
-            Base.root_module(pkgid)
-        else
-            lock(_LOAD_LOCKER) do
-                @debug "loading package: $(pkgid.name)"
-                Base.require(pkgid)
-            end
+        Base.root_module(pkgid)
+    else
+        lock(_LOAD_LOCKER) do
+            @debug "loading package: $(pkgid.name)"
+            Base.require(pkgid)
         end
+    end
 
     return mod
 end
