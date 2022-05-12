@@ -99,27 +99,9 @@ julia> @time draw_figure(x) # 💤💤
   4.454738 seconds (13.82 M allocations: 897.071 MiB, 8.81% gc time, 49.97% compilation time)
 ```
 
-Here `4.4` seconds is approximately `2.8` (Plots loading time) plus `1.6` (time to first plot time).
-For this reason, if a functionality is really necessary and widely used by almost everyone, then
-this LazyModules package won't be helpful at all.
-
-## The aggressive lazy loading in the background
-
-Suprisingly, this package can also be used to smooth the REPL experience by moving package loading
-in the background. Let's also take Plots as an example. From above test we know you're going to wait
-about 4.5s to draw the first plot. But it can be shorter if you're using `@lazy import` in the Main
-Module.
-
-```julia
-julia> @time @lazy import Plots
-  0.000000 seconds
-LazyModule(Plots)
-
-julia> @time Plots.plot(1:10); # The Plots package will be ready while I'm typing
-  1.563655 seconds (3.86 M allocations: 214.179 MiB, 2.24% gc time, 99.72% compilation time)
-```
-
-Congrats, you've just saved 2.8s everytime when you open a new Julia REPL to plot something!
+Here `4.4` seconds is approximately `2.8` (Plots loading time) plus `1.6` (time to first plot). For
+this reason, if a functionality is really necessary and widely used by almost everyone, then this
+LazyModules package won't be helpful at all.
 
 ## What is a LazyModule
 
