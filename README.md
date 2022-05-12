@@ -6,7 +6,8 @@ This package provides package developers an alternative option to delay package 
 If some dependency is not used, then users don't need to pay for its latency.
 
 This package is not panacea, it only works for a very limited set of use cases. This package is only
-for (maybe experienced) package authors. End-users should not use this package directly.
+for (maybe experienced) package authors. End-users without a brave heart is not recommended to use
+this package directly.
 
 ## Syntax
 
@@ -103,6 +104,24 @@ Here `4.4` seconds is approximately `2.8` (Plots loading time) plus `1.6` (time 
 For this reason, if a functionality is really necessary and widely used by almost everyone, then
 this LazyModules package won't be helpful at all.
 
+## The aggressive lazy loading in the background
+
+Suprisingly, this package can also be used to smooth the REPL experience by moving package loading
+in the background. Let's also take Plots as an example. From above test we know you're going to wait
+about 4.5s to draw the first plot. But it can be shorter if you're using `@lazy import` in the Main
+Module.
+
+```julia
+julia> @time @lazy import Plots
+  0.000000 seconds
+LazyModule(Plots)
+
+julia> @time Plots.plot(1:10); # The Plots package will be ready while I'm typing
+  1.563655 seconds (3.86 M allocations: 214.179 MiB, 2.24% gc time, 99.72% compilation time)
+```
+
+Congrats, you've just saved 2.8s everytime when you open a new Julia REPL to plot something!
+
 ## What is a LazyModule
 
 `LazyModule` is not a `Module`; it is indeed, a struct that overrides `getproperty`.
@@ -125,6 +144,8 @@ Package is loaded whenever there's a `getproperty` call, e.g., `SparseArrays.spr
 The simplest example to trigger the world age issue is perhaps the following:
 
 ```julia
+julia> ENV["AGGRESSIVE_LOAD"] = "0" # disable the package loading in the background
+
 julia> using LazyModules
 
 julia> @lazy import ImageCore
@@ -177,8 +198,9 @@ julia> foo()
 RGB{Float64}(0.0,0.0,0.0)
 ```
 
-The second is to load the "core" packages eagerly so that we don't need to process "alien" types. For instance,
-`RGB` and its arithmetic are provided by `Colors` and `ColorVectorSpace`:
+The second workaround is to load the "core" packages eagerly so that we don't need to process
+"alien" types. For instance, `RGB` and its arithmetic are provided by `Colors` and
+`ColorVectorSpace`:
 
 ```julia
 julia> using Colors, ColorVectorSpace
@@ -200,35 +222,22 @@ RGB{Float64}(0.0,0.0,0.0)
 
 The world-age issue is exactly the reason why this package should not be used by users directly.
 
-## FAQ
+## Overhead
 
-**What can I use?**
-
-For functions and constructors, only.
-
-A wrapper function will be created so you should not use it for dispatch purposes. Parametric types
-are not supported.
-
-```julia
-@lazy import ImageCore as LIC
-typeof(LIC.RGB) # typeof(LazyModules.RGB) (singleton type of function RGB, subtype of Function)
-
-import ImageCore
-typeof(ImageCore.RGB) # UnionAll
-```
-
-This difference would cause some seemingly strange error, if used without caution:
-
-```julia
-julia> rand(ImageCore.RGB)
-RGB{Float64}(0.006670251070669986,0.10659171495118891,0.20788921280581485)
-
-julia> rand(LIC.RGB) # because LIC.RGB is not a type, it's a function
-ERROR: ArgumentError: Sampler for this object is not defined
-...
-```
-
-**How large is the overhead?**
-
-The overhead is about ~100ns in Intel i9-12900K due to the dynamic dispatch via `invokelatest`. Thus
+The overhead is about ~80ns in Intel i9-12900K due to the dynamic dispatch via `invokelatest`. Thus
 you should not use this package for very trivial functions.
+
+```julia
+julia> @lazy import ImageCore as LazyImageCore
+LazyModule(ImageCore)
+
+julia> import ImageCore
+
+julia> @btime zero(LazyImageCore.RGB)
+  82.633 ns (0 allocations: 0 bytes)
+RGB{N0f8}(0.0,0.0,0.0)
+
+julia> @btime zero(ImageCore.RGB)
+  0.012 ns (0 allocations: 0 bytes)
+RGB{N0f8}(0.0,0.0,0.0)
+```
