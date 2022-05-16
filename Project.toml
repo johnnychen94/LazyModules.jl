@@ -1,7 +1,7 @@
 name = "LazyModules"
 uuid = "8cdb02fc-e678-4876-92c5-9defec4f444e"
 authors = ["Johnny Chen <johnnychen94@hotmail.com>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [compat]
 julia = "1"
