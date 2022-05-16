@@ -1,7 +1,7 @@
 module LazyModules
 
 using Base: invokelatest
-using Base: PkgId
+using Base: PkgId, UUID
 
 export @lazy
 
@@ -11,13 +11,7 @@ mutable struct LazyModule
     _lazy_pkgid::PkgId
     _lazy_loaded::Bool
 end
-LazyModule(id::PkgId) = LazyModule(id, false)
-LazyModule(name::Symbol) = LazyModule(string(name))
-function LazyModule(name::String)
-    pkgid = Base.identify_package(name)
-    isnothing(pkgid) && error("can't find package: $name")
-    return LazyModule(pkgid)
-end
+LazyModule(uuid::UUID, name::String) = LazyModule(PkgId(uuid, name), false)
 Base.Docs.Binding(m::LazyModule, v::Symbol) = Base.Docs.Binding(checked_import(m._lazy_pkgid), v)
 function Base.show(io::IO, m::LazyModule)
     print(io, "LazyModule(", m._lazy_pkgid.name, ")")
@@ -74,11 +68,27 @@ end
 
 
 """
-    @lazy import PkgName
+    @lazy import PkgName=UUID
 
 Lazily import package `PkgName` with the actual loading delayed to the first usage.
+
+```julia
+module MyLazyPkg
+    @lazy import Plots="91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+    draw_figure(data) = Plots.plot(data, title="MyPkg Plot")
+end
+```
 """
 macro lazy(ex)
+    if ex.head in (:import, :using)
+        error("require `@lazy $(ex)=UUID` format.")
+    end
+    if ex.head != :(=)
+        error("unrecognized expression: $(ex)")
+    end
+    uuid = UUID(ex.args[2])
+    ex = ex.args[1]
+
     if ex.head != :import
         @warn "only `import` command is supported, fallback to eager mode"
         return ex
@@ -91,7 +101,7 @@ macro lazy(ex)
     x = args[1]
     if x.head == :.
         # usage: @lazy import Foo
-        m = _lazy_load(__module__, x.args[1], x.args[1])
+        m = _lazy_load(__module__, x.args[1], uuid, x.args[1])
         # TODO(johnnychen94): the background eager loading seems to work only for Main scope
         isa(m, Module) && return m
         isnothing(m) && return ex
@@ -102,7 +112,7 @@ macro lazy(ex)
         return ex
     elseif x.head == :as # compat: Julia at least v1.6
         # usage: @lazy import Foo as LazyFoo
-        m = _lazy_load(__module__, x.args[2], x.args[1].args[1])
+        m = _lazy_load(__module__, x.args[2], uuid, x.args[1].args[1])
         isa(m, Module) && return m
         isnothing(m) && return ex
         return m
@@ -112,7 +122,7 @@ macro lazy(ex)
     end
 end
 
-function _lazy_load(mod, name::Symbol, sym::Symbol)
+function _lazy_load(mod, name::Symbol, uuid::UUID, sym::Symbol)
     if isdefined(mod, name)
         # otherwise, Revise will constantly trigger the constant redefinition warning
         m = getfield(mod, name)
@@ -124,7 +134,7 @@ function _lazy_load(mod, name::Symbol, sym::Symbol)
         end
     end
     try
-        m = LazyModule(sym)
+        m = LazyModule(uuid, String(sym))
         Core.eval(mod, :(const $(name) = $m))
         return m
     catch err

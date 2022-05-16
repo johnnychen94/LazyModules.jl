@@ -4,7 +4,7 @@ using Test
 module LazyOffsetArrays
     using LazyModules
 
-    @lazy import OffsetArrays
+    @lazy import OffsetArrays ="6fe1bfb0-de20-5000-8ca7-80f57d26f881"
 
     function zero_based(A)
         o = Base.invokelatest(OffsetArrays.Origin, 0)
@@ -24,7 +24,7 @@ end
     @test AO isa OffsetArray
 
     @static if VERSION >= v"1.6"
-        @lazy import OffsetArrays as FOO
+        @lazy import OffsetArrays as FOO = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
         AOO = FOO.OffsetArray(A, -1, -1)
         @test AOO == AO
     end

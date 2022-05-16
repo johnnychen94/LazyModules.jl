@@ -25,8 +25,9 @@ row is measured on the same machine.
 
 ## Syntax
 
-- `@lazy import Foo` ✅
-- `@lazy import Foo as LazyFoo` ✅ (Julia 1.6+)
+- `@lazy import Foo = "<UUID>"` ✅
+- `@lazy import Foo as LazyFoo = "<UUID>"` ✅ (Julia 1.6+)
+- `@lazy import Foo` ❌
 - `@lazy using Foo` ❌
 
 ## The lazy Plots story
@@ -81,7 +82,7 @@ module MyLazyPkg
 export generate_data, draw_figure
 +using LazyModules
 -import Plots
-+@lazy import Plots
++@lazy import Plots="91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 
 generate_data(n) = sin.(range(start=0, stop=5, length=n) .+ 0.1.*rand(n))
 draw_figure(data) = Plots.plot(data, title="MyPkg Plot")
@@ -125,7 +126,7 @@ LazyModules package won't be helpful at all.
 ```julia
 julia> using LazyModules
 
-julia> @lazy import SparseArrays
+julia> @lazy import SparseArrays="2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 LazyModule(SparseArrays)
 
 julia> SparseArrays.sprand(10, 10, 0.3) # triggers the loading
@@ -142,7 +143,7 @@ The simplest example to trigger the world age issue is perhaps the following:
 ```julia
 julia> using LazyModules
 
-julia> @lazy import ImageCore
+julia> @lazy import ImageCore = "a09fc81d-aa75-5fe9-8630-4744c3626534"
 LazyModule(ImageCore)
 
 julia> function foo()
@@ -201,7 +202,7 @@ julia> using Colors, ColorVectorSpace
 
 julia> using LazyModules
 
-julia> @lazy import ImageCore
+julia> @lazy import ImageCore = "a09fc81d-aa75-5fe9-8630-4744c3626534"
 LazyModule(ImageCore)
 
 julia> function foo()
@@ -218,17 +219,17 @@ The world-age issue is exactly the reason why this package should not be used by
 
 ## Overhead
 
-The overhead is about ~80ns in Intel i9-12900K due to the dynamic dispatch via `invokelatest`. Thus
+The overhead is about ~50ns in Intel i9-12900K due to the dynamic dispatch via `invokelatest`. Thus
 you should not use this package for very trivial functions.
 
 ```julia
-julia> @lazy import ImageCore as LazyImageCore
+julia> @lazy import ImageCore as LazyImageCore = "a09fc81d-aa75-5fe9-8630-4744c3626534"
 LazyModule(ImageCore)
 
 julia> import ImageCore
 
 julia> @btime zero(LazyImageCore.RGB)
-  82.633 ns (0 allocations: 0 bytes)
+  49.004 ns (0 allocations: 0 bytes)
 RGB{N0f8}(0.0,0.0,0.0)
 
 julia> @btime zero(ImageCore.RGB)
