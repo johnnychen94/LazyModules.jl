@@ -123,9 +123,14 @@ function _lazy_load(mod, name::Symbol, sym::Symbol)
             return nothing
         end
     end
-    m = LazyModule(sym)
-    Core.eval(mod, :(const $(name) = $m))
-    return m
+    try
+        m = LazyModule(sym)
+        Core.eval(mod, :(const $(name) = $m))
+        return m
+    catch err
+        @warn err
+        return nothing
+    end
 end
 
 if VERSION < v"1.1"
