@@ -8,6 +8,21 @@ If some dependency is not used, then users don't need to pay for its latency.
 This package is not panacea, it only works for a very limited set of use cases. This package is only
 for (maybe experienced) package authors. End-users is not recommended to use this package directly.
 
+Be careful about the world age issue!
+
+## Examples
+
+Lazy mode uses the `@lazy` macro and eager mode simply removes the macro. All the functionalties
+will still be the same except that lazy mode delays a significant portion of packages loading to
+their first usage -- if ever get called.
+
+| Package                 | latency (eager)    | latency (lazy) | Julia   |
+| ------------------      | -----------------  | -------------- | ------  |
+| [ImageIO.jl] v0.6.3     |  1.049s            |  0.115s        | v1.7.2  |
+
+The latency is measured by `@time using XXX` in a new Julia REPL after full precompilation.  Each
+row is measured on the same machine.
+
 ## Syntax
 
 - `@lazy import Foo` ✅
@@ -220,3 +235,6 @@ julia> @btime zero(ImageCore.RGB)
   0.012 ns (0 allocations: 0 bytes)
 RGB{N0f8}(0.0,0.0,0.0)
 ```
+
+
+[ImageIO.jl]: https://github.com/JuliaIO/ImageIO.jl
