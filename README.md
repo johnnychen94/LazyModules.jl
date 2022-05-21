@@ -12,7 +12,7 @@ Be careful about the world age issue!
 
 ## Examples
 
-Lazy mode uses the `@lazy` macro and eager mode simply removes the macro. All the functionalties
+Lazy mode uses the `@lazy` macro and eager mode simply removes the macro. All the functionalities
 will still be the same except that lazy mode delays a significant portion of packages loading to
 their first usage -- if ever get called.
 
