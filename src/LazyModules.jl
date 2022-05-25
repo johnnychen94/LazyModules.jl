@@ -143,6 +143,34 @@ function _lazy_load(mod, name::Symbol, uuid::UUID, sym::Symbol)
     end
 end
 
+"""
+    require(m)
+
+To avoid world-age issues, some package should be eagerly loaded first. This
+function checks if the lazy package is loaded already.
+
+The following example unlock the `fancy_color` feature unless users explicitly
+load the Colors package.
+
+```julia
+using LazyModules
+
+@lazy import Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
+
+function fancy_color()
+    LazyModules.require(Colors)
+    return zero(Colors.RGB)
+end
+```
+"""
+function require(m::LazyModule)
+    pkgid = m._lazy_pkgid
+    if !Base.root_module_exists(pkgid)
+        mname = pkgid.name
+        error("$mname is required to be loaded first, maybe `using $mname` or `import $mname` and try again.")
+    end
+end
+
 if VERSION < v"1.1"
     isnothing(x) = x === nothing
 end
