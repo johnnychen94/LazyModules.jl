@@ -12,9 +12,9 @@ Be careful about the world age issue!
 
 ## Examples
 
-The eager mode is checked by setting environment variable `LazyModules_lazyload` as `"false"`. All
-the functionalties will still be the same except that lazy mode delays a significant portion of
-packages loading to their first usage -- if ever get called.
+The eager mode is checked by setting environment variable `LazyModules_lazyload` as `"false"`.
+All the functionalities will still be the same except that lazy mode delays a significant portion
+of packages loading to their first usage -- if ever get called.
 
 | Package                 | latency (eager)    | latency (lazy) | Julia   |
 | ------------------      | -----------------  | -------------- | ------  |
