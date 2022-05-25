@@ -12,9 +12,9 @@ Be careful about the world age issue!
 
 ## Examples
 
-Lazy mode uses the `@lazy` macro and eager mode simply removes the macro. All the functionalties
-will still be the same except that lazy mode delays a significant portion of packages loading to
-their first usage -- if ever get called.
+The eager mode is checked by setting environment variable `LazyModules_lazyload` as `"false"`. All
+the functionalties will still be the same except that lazy mode delays a significant portion of
+packages loading to their first usage -- if ever get called.
 
 | Package                 | latency (eager)    | latency (lazy) | Julia   |
 | ------------------      | -----------------  | -------------- | ------  |
@@ -237,5 +237,20 @@ julia> @btime zero(ImageCore.RGB)
 RGB{N0f8}(0.0,0.0,0.0)
 ```
 
+## Disable lazy mode
+
+If you want to eagerly load every dependency, you can start your Julia process with
+environment variable `LazyModules_lazyload` as `"false"`. That way `@lazy import` command
+will degenerated to a normal `import` command. For instance, in bash shell, you could do
+
+```console
+jc@ubuntu:~$ LazyModules_lazyload=false julia
+```
+
+If set successfully, this will print an informative message:
+
+```julia
+[ Info: disable lazy package loading: environment variable `LazyModules_lazyload=false` is detected
+```
 
 [ImageIO.jl]: https://github.com/JuliaIO/ImageIO.jl
