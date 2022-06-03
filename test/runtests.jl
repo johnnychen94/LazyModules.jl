@@ -13,6 +13,18 @@ module LazyOffsetArrays
     export zero_based
 end
 
+module LazyColors
+    using LazyModules
+
+    @lazy import Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
+    function fancy_color()
+        LazyModules.require(Colors)
+        return zero(Colors.RGB)
+    end
+
+    export fancy_color
+end
+
 @testset "LazyModules" begin
     using .LazyOffsetArrays
 
@@ -28,4 +40,10 @@ end
         AOO = FOO.OffsetArray(A, -1, -1)
         @test AOO == AO
     end
+
+    using .LazyColors
+    msg = "Colors is required to be loaded first, maybe `using Colors` or `import Colors` and try again."
+    @test_throws ErrorException(msg) fancy_color()
+    using Colors
+    @test fancy_color() == zero(RGB)
 end

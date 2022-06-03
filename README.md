@@ -217,6 +217,35 @@ RGB{Float64}(0.0,0.0,0.0)
 
 The world-age issue is exactly the reason why this package should not be used by users directly.
 
+As you might already notice, the main cause of world age issue is because some packages are not
+loaded eagerly. This package provides a helper function to require user codes eagerly load the
+requested packages. For instance,
+
+```julia
+julia> @lazy import ImageCore as LazyImageCore = "a09fc81d-aa75-5fe9-8630-4744c3626534"
+LazyModule(ImageCore)
+
+julia> function foo()
+           LazyModules.require(LazyImageCore)
+           c = LazyImageCore.RGB(0.0, 0.0, 0.0)
+           return c * 3
+       end
+foo (generic function with 1 method)
+
+julia> foo()
+ERROR: ImageCore is required to be loaded first, maybe `using ImageCore` or `import ImageCore` and try again.
+...
+
+julia> using ImageCore # now let's explicitly load it
+
+julia> foo() # issue gone
+RGB{Float64}(0.0,0.0,0.0)
+```
+
+By doing this, your users can get an informative error messages rather than arbitrary non-sense
+errors due to world-age issue. This can be used to "lock" some features unless the users explicitly
+load necessary dependencies.
+
 ## Overhead
 
 The overhead is about ~50ns in Intel i9-12900K due to the dynamic dispatch via `invokelatest`. Thus
