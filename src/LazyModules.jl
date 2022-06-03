@@ -5,6 +5,8 @@ using Base: PkgId, UUID
 
 export @lazy
 
+const _LAZYMODE = Ref(true)
+
 const _LOAD_LOCKER = Threads.ReentrantLock()
 
 mutable struct LazyModule
@@ -89,6 +91,10 @@ macro lazy(ex)
     uuid = UUID(ex.args[2])
     ex = ex.args[1]
 
+    if !_LAZYMODE[]
+        @info "disable lazy package loading: environment variable `LazyModules_lazyload=false` is detected" maxlog=1
+        return ex
+    end
     if ex.head != :import
         @warn "only `import` command is supported, fallback to eager mode"
         return ex
@@ -145,5 +151,11 @@ end
 
 if VERSION < v"1.1"
     isnothing(x) = x === nothing
+end
+
+function __init__()
+    if get(ENV, "LazyModules_lazyload", "") == "false"
+        _LAZYMODE[] = false
+    end
 end
 end # module
